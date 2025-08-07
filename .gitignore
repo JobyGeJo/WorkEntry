@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
+*.sqlite3
+*.db
+*.log
+
+# FastAPI/Python env
+backend/.venv/
+*.env
+
+# PyCharm and WebStorm
+.idea
+*.iml
+out/
+
+# VSCode
+.vscode/
+
+# Docker
+*.pid
+*.pid.lock
+
+# React
+node_modules/
+build/
+dist/
+*.lock
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+.cache
+
+# Testing
+.pytest_cache/
+__snapshots__/
+
+# Other
+*.bak
+*.swp
+*.swo

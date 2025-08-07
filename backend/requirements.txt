@@ -1,0 +1,13 @@
+sqlalchemy~=2.0.41
+fastapi~=0.115.14
+pydantic~=2.11.7
+starlette~=0.46.2
+redis~=6.2.0
+
+bcrypt~=4.3.0
+jose~=1.0.0
+python-jose~=3.5.0
+reportlab~=4.4.3
+
+uvicorn[standard]~=0.29.0
+psycopg2-binary
