@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import auth from '../auth'
 import { useNavigate } from 'react-router-dom'
+import authServices from "../services/authServices.js";
+import "../styles/login.sass"
 
 function Login() {
     const [username, setUsername] = useState('')
@@ -10,7 +11,7 @@ function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        await auth.post('/login', { id: parseInt(username), password }).then((response) => {
+        await authServices.login({ id: parseInt(username), password }).then((response) => {
             if (response.status === 200) {
                 navigate('/dashboard');
             } else {
@@ -27,8 +28,8 @@ function Login() {
 
 
     return (
-        <div className="container">
-            <h2>Login</h2>
+        <div className="container login-container">
+            <h1>Work Entry</h1>
             <form onSubmit={handleSubmit}>
                 <input
                     type="text"

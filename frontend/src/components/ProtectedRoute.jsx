@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
-import auth from '../auth'
+import authServices from "../services/authServices.js";
 
 function ProtectedRoute({ children, setUser }) {
     const [loading, setLoading] = useState(true)
@@ -9,7 +9,7 @@ function ProtectedRoute({ children, setUser }) {
     useEffect(() => {
         const checkSession = async () => {
             try {
-                const res = await auth.get('/session')
+                const res = await authServices.session()
                 setAuthenticated(true)
                 setUser(res.data.data) // store the whole user object
             } catch {
@@ -22,7 +22,7 @@ function ProtectedRoute({ children, setUser }) {
     }, [setUser])
 
     if (loading) return <p>Loading...</p>
-    return authenticated ? children : <Navigate to="/" />
+    return authenticated ? children : <Navigate to="/login" />
 }
 
 export default ProtectedRoute
