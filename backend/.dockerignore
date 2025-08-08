@@ -9,7 +9,7 @@ env/
 .venv/
 
 # Pycharm project files
-.idea/
+../.idea/
 
 # Logs
 *.log

@@ -8,9 +8,9 @@ import logging
 from logger import log_db_event
 from logger.config import get_rotating_handler
 
-DB_NAME = getenv('DB_NAME')
-DB_PASS = getenv('DB_PASS')
-DB_HOST = getenv('HOST', "localhost")
+DB_NAME = getenv('POSTGRES_DB')
+DB_PASS = getenv('POSTGRES_PASS')
+DB_HOST = getenv('HOST')
 
 DATABASE_URL = f"postgresql://{DB_NAME}:{DB_PASS}@{DB_HOST}/postgres"
 

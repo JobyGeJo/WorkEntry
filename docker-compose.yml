@@ -1,15 +1,15 @@
 services:
-  backend:
-    build:
-      context: ./backend
-    container_name: backend
-    env_file: backend/variables.env
-    ports:
-      - "8000:8000"
-    depends_on:
-      - postgres
-#      - mongodb
-      - redis
+#  backend:
+#    build:
+#      context: ./backend
+#    container_name: backend
+#    env_file: backend/variables.env
+#    ports:
+#      - "8000:8000"
+#    depends_on:
+#      - postgres
+##      - mongodb
+#      - redis
 
 #  frontend:
 #    build:
