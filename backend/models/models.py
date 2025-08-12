@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from pydantic import BaseModel
@@ -12,3 +13,11 @@ class User(__default_model):
     id: int
     username: str
     phone_number: Optional[str] = None
+
+class TimeSheet(__default_model):
+    id: int
+    person: str
+    machine: str
+    description: str
+    start_time: datetime
+    end_time: datetime

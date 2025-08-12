@@ -1,9 +1,13 @@
 # request.py
 import re
+from datetime import datetime, date
 from typing import Optional, List
 
 from Exceptions import BadRequest
 from pydantic import BaseModel, Field, constr, field_validator
+
+from database.tables import UserTable, TimesheetTable
+from models.models import TimeSheet
 
 
 class LoginPayload(BaseModel):
@@ -32,16 +36,36 @@ class QueryParams(BaseModel):
     # order: Optional[str] = "asc"
     search: Optional[str] = None
 
-    def execute(
-            self,
-            base_query,  # pre-built query (can include joins)
-            search_column=None  # e.g., VendorTable.name
-    ) -> List:
+    def execute(self, base_query) -> List:
+        return self.build(base_query).all()
+
+    def build[T](self, base_query: T) -> T:
+        return base_query.offset(self.skip).limit(self.limit)
+
+
+class TimeSheetParams(QueryParams):
+    machine: Optional[str] = None
+    person: Optional[str] = None
+    description: Optional[str] = None
+    from_date: date = date.today()
+    to_date: date = date.today()
+
+    def build[T](self, base_query: T) -> T:
         query = base_query
 
-        if self.search and search_column is not None:
-            search_filter = search_column.ilike(f"%{self.search}%")
-            query = query.filter(search_filter)
+        query = query.filter(
+            TimesheetTable.start_time >= self.from_date,
+            TimesheetTable.start_time <= datetime.combine(self.to_date, datetime.max.time())
+        )
 
-        query = query.offset(self.skip).limit(self.limit)
-        return query.all()
+        if self.person:
+            query = query.filter(UserTable.username.ilike(f"%{self.person}%"))
+        if self.machine:
+            query = query.filter(TimesheetTable.machine_name.ilike(f"%{self.machine}%"))
+        if self.description:
+            query = query.filter(TimesheetTable.description.ilike(f"%{self.description}%"))
+
+        return super().build(query)
+
+    def execute(self, base_query) -> List[TimeSheet]:
+        return self.build(base_query).all()

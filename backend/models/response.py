@@ -1,16 +1,14 @@
 from http import HTTPStatus
-from typing import Generic, Optional, TypeVar, Dict, Union, Self
+from typing import Optional, Dict, Union, Self
 
-from pydantic import BaseModel, model_validator
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, model_validator
 
 from Exceptions import ResponseError
 from utils.session import delete_cookie
 
-T = TypeVar("T")
 
-
-class ResponseModel(BaseModel, Generic[T]):
+class ResponseModel[T](BaseModel):
     status: HTTPStatus
     message: str
     data: Optional[T] = None
@@ -40,7 +38,7 @@ class ResponseModel(BaseModel, Generic[T]):
 class Respond:
 
     @staticmethod
-    def __send_response(
+    def __send_response[T](
             status: HTTPStatus,
             message: str, data:
             Optional[T] = None,
@@ -54,11 +52,11 @@ class Respond:
         return ResponseModel(status=status, error=status.phrase, message=message, issues=issues).jsonresponse()
 
     @staticmethod
-    def success(message: str, data: Optional[T] = None, **kwargs) -> JSONResponse:
+    def success[T](message: str, data: Optional[T] = None, **kwargs) -> JSONResponse:
         return Respond.__send_response(HTTPStatus.OK, message, data, **kwargs)
 
     @staticmethod
-    def created(message: str, data: Optional[T] = None, **kwargs) -> JSONResponse:
+    def created[T](message: str, data: Optional[T] = None, **kwargs) -> JSONResponse:
         return Respond.__send_response(HTTPStatus.CREATED, message, data, **kwargs)
 
     @staticmethod

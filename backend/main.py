@@ -13,13 +13,13 @@ from logger.app import log_critical
 from models.response import Respond
 # from routes.utils import router as utils_router
 from routes.auth import router as auth_router
-# from routes.api import api_router
+from routes.api import api_router
 
 app = FastAPI()
 
 # Include auth routes with optional prefix
 app.include_router(auth_router)
-# app.include_router(api_router)
+app.include_router(api_router)
 # app.include_router(utils_router)
 
 

@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from Enums import Roles
 from Exceptions import NotFound, Unauthorized, Conflict, InternalServerError
 from database import with_db_session
-from database.db import SessionLocal
+from database.db import Session
 from database.tables import UserTable, RoleTable
 from models.models import User
 from models.request import RegisterPayload
@@ -36,7 +36,7 @@ def model_validate(func):
 
 
 @with_db_session
-def get_user(user_id: int, *, db: SessionLocal) -> User:
+def get_user(user_id: int, *, db: Session) -> User:
     data = db.query(
         UserTable.id,
         UserTable.username,
@@ -51,7 +51,7 @@ def get_user(user_id: int, *, db: SessionLocal) -> User:
         return User(id=data.id, username=data.username, phone_number=data.phone_number)
 
 @with_db_session
-def login_user(user_id: int, password: str, *, db: SessionLocal) -> Optional[User]:
+def login_user(user_id: int, password: str, *, db: Session) -> Optional[User]:
     fetched_password: Row = db.query(UserTable.password).filter(UserTable.id == user_id).first()
 
     if fetched_password is None:
@@ -63,15 +63,15 @@ def login_user(user_id: int, password: str, *, db: SessionLocal) -> Optional[Use
 
 @with_db_session
 @model_validate
-def find_users(username: str, *, db: SessionLocal) -> list[User]:
+def find_users(username: str, *, db: Session) -> list[User]:
     return db.query(UserTable.password, UserTable.username).filter(UserTable.username.contains(username)).all()
 
 @with_db_session
-def does_user_exist(user_id: int, *, db: SessionLocal) -> bool:
+def does_user_exist(user_id: int, *, db: Session) -> bool:
     return bool(db.query(UserTable.id).filter(UserTable.id == user_id).first())
 
 @with_db_session
-def create_user(user: RegisterPayload | UserTable, *, db: SessionLocal) -> int:
+def create_user(user: RegisterPayload | UserTable, *, db: Session) -> int:
     if isinstance(user, RegisterPayload):
         user = UserTable(
             username=user.username,
@@ -94,7 +94,7 @@ def create_user(user: RegisterPayload | UserTable, *, db: SessionLocal) -> int:
         raise InternalServerError("Database error while creating user")
 
 @with_db_session
-def get_role(user_id: int, *, db: SessionLocal) -> Roles:
+def get_role(user_id: int, *, db: Session) -> Roles:
     role = (
         db.query(RoleTable.label)
         .join(UserTable, UserTable.role_id == RoleTable.id)

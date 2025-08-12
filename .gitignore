@@ -75,3 +75,5 @@ dist-ssr
 *.sw?
 
 frontend/cert
+
+backend/test.py
