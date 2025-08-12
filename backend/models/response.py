@@ -2,16 +2,27 @@ from http import HTTPStatus
 from typing import Optional, Dict, Union, Self
 
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, computed_field
 
 from Exceptions import ResponseError
 from utils.session import delete_cookie
+
+
+class Pagination(BaseModel):
+    total_items: int
+    limit: int
+    page: int
+
+    @computed_field
+    def total_pages(self) -> int:
+        return self.total_items // self.limit + 1
 
 
 class ResponseModel[T](BaseModel):
     status: HTTPStatus
     message: str
     data: Optional[T] = None
+    pagination: Optional[Pagination] = None
 
     error: Optional[str] = None
     issues: Optional[Union[str, Dict[str, str]]] = None
@@ -40,11 +51,12 @@ class Respond:
     @staticmethod
     def __send_response[T](
             status: HTTPStatus,
-            message: str, data:
-            Optional[T] = None,
+            message: str,
+            data: Optional[T] = None,
+            pagination: Optional[Pagination] = None,
             **kwargs
     ) -> JSONResponse:
-        return ResponseModel(status=status, message=message, data=data).jsonresponse(**kwargs)
+        return ResponseModel(status=status, message=message, data=data, pagination=pagination).jsonresponse(**kwargs)
 
     @staticmethod
     def __send_error(status: HTTPStatus, message: str,
@@ -52,8 +64,8 @@ class Respond:
         return ResponseModel(status=status, error=status.phrase, message=message, issues=issues).jsonresponse()
 
     @staticmethod
-    def success[T](message: str, data: Optional[T] = None, **kwargs) -> JSONResponse:
-        return Respond.__send_response(HTTPStatus.OK, message, data, **kwargs)
+    def success[T](message: str, data: Optional[T] = None, pagination: Optional[Pagination] = None, **kwargs) -> JSONResponse:
+        return Respond.__send_response(HTTPStatus.OK, message, data, pagination, **kwargs)
 
     @staticmethod
     def created[T](message: str, data: Optional[T] = None, **kwargs) -> JSONResponse:

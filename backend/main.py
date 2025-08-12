@@ -11,9 +11,9 @@ from Exceptions import ResponseError, UnprocessableContent, Unauthorized
 from logger import log_request, log_error
 from logger.app import log_critical
 from models.response import Respond
+from routes.api import api_router
 # from routes.utils import router as utils_router
 from routes.auth import router as auth_router
-from routes.api import api_router
 
 app = FastAPI()
 
@@ -45,7 +45,7 @@ def response_exception_handler(request: Request, exc: ResponseError) -> JSONResp
     return Respond.send_error(exc)
 
 @app.exception_handler(RequestValidationError)
-def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+def request_validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     issues = {
         err["loc"][-1]: err["msg"] for err in exc.errors()
     }
