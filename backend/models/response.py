@@ -2,20 +2,25 @@ from http import HTTPStatus
 from typing import Optional, Dict, Union, Self
 
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, model_validator, computed_field
+from pydantic import BaseModel, model_validator, computed_field, Field
 
-from Exceptions import ResponseError
+from Exceptions import ResponseError, UnprocessableContent, NotFound
 from utils.session import delete_cookie
 
 
 class Pagination(BaseModel):
-    total_items: int
-    limit: int
-    page: int
+    total_items: int = Field(..., ge=0)
+    limit: int = Field(..., gt=0)
+    page: int = Field(..., gt=0)
 
     @computed_field
     def total_pages(self) -> int:
-        return self.total_items // self.limit + 1
+        if self.total_items == 0:
+            raise NotFound("No data found")
+        pages = (self.total_items + self.limit - 1) // self.limit
+        if pages < self.page:
+            raise UnprocessableContent(f"Page number {self.page} is out of range. Valid pages are 1 to {pages}.")
+        return pages
 
 
 class ResponseModel[T](BaseModel):

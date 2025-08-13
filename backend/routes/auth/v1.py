@@ -25,7 +25,7 @@ def login(request: Request, response: Response, payload: LoginPayload):
     return Respond.success("Logged in successfully", user, headers=response.headers)
 
 
-@router.post("/register", status_code=201, dependencies=[Depends(required_roles(Roles.ADMIN, Roles.MANAGER))])
+@router.post("/register", status_code=201)
 def register(response: Response, payload: RegisterPayload):
     user_id = create_user(payload)
     # create_session(user_id, response)

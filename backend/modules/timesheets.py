@@ -4,13 +4,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, Query as SQLQuery
 
 from Exceptions import InternalServerError
-from database import with_db_session
-from database.tables import TimesheetTable, UserTable
+from database import with_postgres
+from database.postgres.tables import TimesheetTable, UserTable
 from models.models import TimeSheet
 from models.request import TimeSheetParams, TimesheetPayload
 
 
-@with_db_session
+@with_postgres
 def fetch_timesheets(params: TimeSheetParams, *, db: Session) -> List[TimeSheet]:
     base_query = db.query(
         TimesheetTable.id,
@@ -25,7 +25,7 @@ def fetch_timesheets(params: TimeSheetParams, *, db: Session) -> List[TimeSheet]
 
     return [TimeSheet.model_validate(timesheet) for timesheet in query.all()]
 
-@with_db_session
+@with_postgres
 def create_timesheet(activity: Union[TimesheetPayload, TimesheetTable], *, db: Session) -> int:
     if isinstance(activity, TimesheetPayload):
         activity = TimesheetTable(

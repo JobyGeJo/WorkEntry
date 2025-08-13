@@ -12,6 +12,7 @@ class __default_model(BaseModel):
 class User(__default_model):
     id: int
     username: str
+    role_id: int
     phone_number: Optional[str] = None
 
 class TimeSheet(__default_model):

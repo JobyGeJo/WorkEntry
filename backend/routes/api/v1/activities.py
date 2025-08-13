@@ -12,7 +12,7 @@ timesheet = APIRouter(prefix="/timesheets")
 def get_timesheets(params: TimeSheetParams = Depends()) -> JSONResponse:
     return Respond.success("Datas fetched successfully", fetch_timesheets(params), params.pagination)
 
-@timesheet.post("")
+@timesheet.post("", status_code=201)
 def post_timesheets(payload: TimesheetPayload, request: Request) -> JSONResponse:
     if payload.user_id is None:
         payload.user_id = get_session_user_id(request)

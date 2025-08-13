@@ -31,3 +31,6 @@ def log_critical(request: Request, error: Exception) -> None:
 
 def log_debug(text: Any) -> None:
     app_logger.debug(text)
+
+def log(message: str, level=logging.INFO) -> None:
+    app_logger.log(level, message)
