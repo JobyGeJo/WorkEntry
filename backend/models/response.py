@@ -1,19 +1,33 @@
 from http import HTTPStatus
-from typing import Generic, Optional, TypeVar, Dict, Union, Self
+from typing import Optional, Dict, Union, Self
 
-from pydantic import BaseModel, model_validator
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, model_validator, computed_field, Field
 
-from Exceptions import ResponseError
+from Exceptions import ResponseError, UnprocessableContent, NotFound
 from utils.session import delete_cookie
 
-T = TypeVar("T")
+
+class Pagination(BaseModel):
+    total_items: int = Field(..., ge=0)
+    limit: int = Field(..., gt=0)
+    page: int = Field(..., gt=0)
+
+    @computed_field
+    def total_pages(self) -> int:
+        if self.total_items == 0:
+            raise NotFound("No data found")
+        pages = (self.total_items + self.limit - 1) // self.limit
+        if pages < self.page:
+            raise UnprocessableContent(f"Page number {self.page} is out of range. Valid pages are 1 to {pages}.")
+        return pages
 
 
-class ResponseModel(BaseModel, Generic[T]):
+class ResponseModel[T](BaseModel):
     status: HTTPStatus
     message: str
     data: Optional[T] = None
+    pagination: Optional[Pagination] = None
 
     error: Optional[str] = None
     issues: Optional[Union[str, Dict[str, str]]] = None
@@ -40,13 +54,14 @@ class ResponseModel(BaseModel, Generic[T]):
 class Respond:
 
     @staticmethod
-    def __send_response(
+    def __send_response[T](
             status: HTTPStatus,
-            message: str, data:
-            Optional[T] = None,
+            message: str,
+            data: Optional[T] = None,
+            pagination: Optional[Pagination] = None,
             **kwargs
     ) -> JSONResponse:
-        return ResponseModel(status=status, message=message, data=data).jsonresponse(**kwargs)
+        return ResponseModel(status=status, message=message, data=data, pagination=pagination).jsonresponse(**kwargs)
 
     @staticmethod
     def __send_error(status: HTTPStatus, message: str,
@@ -54,11 +69,11 @@ class Respond:
         return ResponseModel(status=status, error=status.phrase, message=message, issues=issues).jsonresponse()
 
     @staticmethod
-    def success(message: str, data: Optional[T] = None, **kwargs) -> JSONResponse:
-        return Respond.__send_response(HTTPStatus.OK, message, data, **kwargs)
+    def success[T](message: str, data: Optional[T] = None, pagination: Optional[Pagination] = None, **kwargs) -> JSONResponse:
+        return Respond.__send_response(HTTPStatus.OK, message, data, pagination, **kwargs)
 
     @staticmethod
-    def created(message: str, data: Optional[T] = None, **kwargs) -> JSONResponse:
+    def created[T](message: str, data: Optional[T] = None, **kwargs) -> JSONResponse:
         return Respond.__send_response(HTTPStatus.CREATED, message, data, **kwargs)
 
     @staticmethod

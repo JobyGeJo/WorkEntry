@@ -8,7 +8,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 if __name__ == "__main__":
-    Password = "<PASSWORD>"
+    Password = "12345678"
 
     hashed = hash_password(Password)
     print(hashed)

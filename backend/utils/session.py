@@ -1,28 +1,21 @@
-from typing import Optional
-
-import redis
+from typing import Optional, List
+from redis import Redis
 import uuid
-from os import getenv
-
 from Exceptions import Unauthorized, BadRequest
 from fastapi import Response, Request
-
 from Exceptions.ResponseErrors import TooManyRequests
+from database import with_redis, get_redis_client
 
 SESSION_COOKIE_NAME = "session_id"
 SESSION_EXPIRY_SECONDS = 60 * 5
 MAX_SESSIONS = 3
-
-r = redis.Redis(host=getenv('HOST'), port=6379, db=0)
 
 def create_session(user_id: int, response: Response):
     if get_session_count(user_id) >= MAX_SESSIONS:
         raise TooManyRequests(f"The user already has {MAX_SESSIONS} sessions")
 
     session_id = str(uuid.uuid4())
-    r.setex(f"session:{session_id}", SESSION_EXPIRY_SECONDS, user_id)
-    r.sadd(f"user_sessions:{user_id}", session_id)
-    r.expire(f"user_sessions:{user_id}", SESSION_EXPIRY_SECONDS)
+    _store_session(session_id, user_id)
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=session_id,
@@ -32,10 +25,17 @@ def create_session(user_id: int, response: Response):
     )
     return session_id
 
+@with_redis
+def _store_session(session_id: str, user_id: int, *, r: Redis):
+    r.setex(f"session:{session_id}", SESSION_EXPIRY_SECONDS, user_id)
+    r.sadd(f"user_sessions:{user_id}", session_id)
+    r.expire(f"user_sessions:{user_id}", SESSION_EXPIRY_SECONDS)
+
 def get_session_user_id(request: Request) -> int:
     session_id = request.cookies.get(SESSION_COOKIE_NAME)
     if not session_id:
         raise BadRequest("Session Not Found")
+    r = get_redis_client()
     user_id: Optional[bytes] = r.get(f"session:{session_id}")
     if not user_id:
         raise Unauthorized("Session Expired or Invalid", True)
@@ -46,10 +46,12 @@ def get_session_user_id(request: Request) -> int:
 
     return user_id
 
-def get_session_count(user_id: int):
+@with_redis
+def get_session_count(user_id: int, *, r: Redis) -> int:
     return r.scard(f"user_sessions:{user_id}")
 
-def delete_session(request: Request, response: Response):
+@with_redis
+def delete_session(request: Request, response: Response, *, r: Redis) -> None:
     session_id = request.cookies.get(SESSION_COOKIE_NAME)
     if session_id:
         user_id: bytes = r.get(f"session:{session_id}")
@@ -58,14 +60,16 @@ def delete_session(request: Request, response: Response):
         r.delete(f"session:{session_id}")
     delete_cookie(response)
 
-def delete_cookie(response: Response):
+def delete_cookie(response: Response) -> None:
     response.delete_cookie(SESSION_COOKIE_NAME)
 
-def is_session_valid(session_id: str) -> bool:
+@with_redis
+def is_session_valid(session_id: str, *, r: Redis) -> bool:
     """Check if a session ID is valid (exists and not expired)."""
     return r.exists(f"session:{session_id}") == 1
 
-def get_user_sessions(user_id: int):
+@with_redis
+def get_user_sessions(user_id: int, *, r: Redis) -> List[str]:
     key = f"user_sessions:{user_id}"
     session_ids = r.smembers(key)  # returns set of bytes
     sessions = []
