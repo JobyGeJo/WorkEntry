@@ -20,7 +20,7 @@ class RegisterPayload(BaseModel):
         # Require at least one digit and one special character
         if not re.search(r"\d", v):
             raise ValueError("Password must include at least one number")
-        if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", v):
+        if not re.search(r"[!@#$%^&*()_+-=,.?\":{}|<>]", v):
             raise ValueError("Password must include at least one special character")
         return v
 

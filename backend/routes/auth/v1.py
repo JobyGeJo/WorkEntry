@@ -1,14 +1,11 @@
 
 from fastapi import APIRouter, Request, Response, Depends
 
-from Enums import Roles
 from Exceptions import BadRequest
-from models.models import User
 from models.request import LoginPayload, RegisterPayload
 from models.response import Respond
-
 from modules.users import get_user, login_user, create_user
-from utils.authorization import authorize, required_roles
+from utils.authorization import authorize
 from utils.session import create_session, get_session_user_id, delete_session, SESSION_COOKIE_NAME, is_session_valid
 
 router = APIRouter(prefix="/v1")
