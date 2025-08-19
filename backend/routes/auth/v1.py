@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request, Response, Depends
 from Exceptions import BadRequest
 from models.request import LoginPayload, RegisterPayload
 from models.response import Respond
-from modules.users import get_user, login_user, create_user
+from modules.users import get_user, login_user, create_user, get_api_key
 from utils.authorization import authorize
 from utils.session import create_session, get_session_user_id, delete_session, SESSION_COOKIE_NAME, is_session_valid
 
@@ -39,4 +39,8 @@ def session(request: Request):
 def logout(request: Request, response: Response):
     delete_session(request, response)
     return Respond.success("Logged out successfully", headers=response.headers)
+
+@router.get("/api-key", dependencies=[Depends(authorize)])
+def api_key(request: Request):
+    return Respond.success("API Key Generated", get_api_key(get_session_user_id(request)))
 

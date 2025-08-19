@@ -29,6 +29,7 @@ class UserTable(Base):
     password = Column(String(60), nullable=False)
     phone_number = Column(String(15), unique=True, nullable=True)
     role_id = Column(Integer, ForeignKey("roles.id"))
+    api_key = Column(String(60), unique=True, nullable=True)
 
 # noinspection SpellCheckingInspection
 class RoleTable(Base):

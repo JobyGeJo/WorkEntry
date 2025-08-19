@@ -1,5 +1,4 @@
 from functools import wraps
-from typing import Optional
 
 from sqlalchemy.engine.row import Row
 from sqlalchemy.exc import IntegrityError
@@ -7,12 +6,13 @@ from sqlalchemy.exc import IntegrityError
 from Enums import Roles
 from Exceptions import NotFound, Unauthorized, Conflict, InternalServerError
 from database import with_postgres
-from database.postgres import Session, DBSession
+from database.postgres import Session
 from database.postgres.tables import UserTable, RoleTable
+from logger import log_db_error
 from models.models import User
 from models.request import RegisterPayload
 from models.request.params import UserParams
-from utils.passwords import hash_password, verify_password
+from utils.passwords import generate_hash, verify_hash, generate_api_key
 
 
 def model_validate(func):
@@ -51,15 +51,43 @@ def get_user(user_id: int, *, db: Session) -> User:
     return data
 
 @with_postgres
-def login_user(user_id: int, password: str, *, db: Session) -> Optional[User]:
+def login_user(user_id: int, password: str, *, db: Session) -> User:
     fetched_password: Row = db.query(UserTable.password).filter(UserTable.id == user_id).first()
 
     if fetched_password is None:
         raise NotFound("User not found")
-    elif verify_password(password, fetched_password.password):
+    elif verify_hash(password, fetched_password.password):
         return get_user(user_id, db=db)
     else:
         raise Unauthorized("Incorrect password")
+
+@with_postgres
+def validate_api_key(api_key: str, *, db: Session) -> int:
+    data = db.query(UserTable.id).filter(UserTable.api_key == api_key).one_or_none()
+    if data.id is None:
+        raise Unauthorized("Invalid API key")
+    return data.id
+
+@with_postgres
+def get_api_key(user_id: int, *, db: Session) -> str:
+    data = db.query(UserTable.api_key).filter(UserTable.id == user_id).one_or_none()
+    if data.api_key is None:
+        return update_api_key(user_id, db=db)
+    return data.api_key
+
+@with_postgres
+def update_api_key(user_id: int, *, db: Session) -> str:
+    key = generate_api_key()
+
+    try:
+        db.query(UserTable).filter(UserTable.id == user_id).update({"api_key": key})
+    except IntegrityError as e:
+        db.rollback()
+        log_db_error(e.detail)
+        raise InternalServerError("Database error while updating api key")
+
+    db.commit()
+    return key
 
 @with_postgres
 @model_validate
@@ -68,14 +96,14 @@ def fetch_users(params: UserParams, *, db: Session) -> list[User]:
 
 @with_postgres
 def does_user_exist(user_id: int, *, db: Session) -> bool:
-    return bool(db.query(UserTable.id).filter(UserTable.id == user_id).first())
+    return bool(db.query(UserTable.id).filter(UserTable.id == user_id).one_or_none())
 
 @with_postgres
 def create_user(user: RegisterPayload | UserTable, *, db: Session) -> int:
     if isinstance(user, RegisterPayload):
         user = UserTable(
             username=user.username,
-            password=hash_password(user.password),
+            password=generate_hash(user.password),
             phone_number=user.phone_number,
         )
     try:
