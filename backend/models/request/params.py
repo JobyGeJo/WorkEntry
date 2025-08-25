@@ -6,7 +6,8 @@ from pydantic import BaseModel, Field, field_validator, model_validator, Private
 from sqlalchemy import Column, BinaryExpression, ColumnElement
 from sqlalchemy.orm import Query as SQLQuery
 
-from database.postgres.tables import UserTable, TimesheetTable
+from database.postgres.tables import UserAccount, UserPhoneNumber, UserTable
+from database.postgres.tables import TimesheetTable
 from models.response import Pagination
 
 
@@ -38,9 +39,9 @@ class QueryParams(BaseModel):
 
     def build(self, base_query: SQLQuery) -> SQLQuery:
         query = self.apply_filters(base_query)
-        query = self.apply_sort(query)
         self._pagination = Pagination(total_items=query.count(), limit=self.limit, page=self.page)
-        return base_query.offset((self.page - 1) * self.limit).limit(self.limit)
+        query = self.apply_sort(query)
+        return query.offset((self.page - 1) * self.limit).limit(self.limit)
 
     @staticmethod
     def eq(column: Column) -> Callable[[Any], ColumnElement[bool]]:
@@ -52,16 +53,16 @@ class QueryParams(BaseModel):
         return lambda value: column.ilike(f"%{value}%")
 
 class UserParams(QueryParams):
-    username: Optional[str] = None
+    name: Optional[str] = None
     phone_number: Optional[str] = None
     role_id: Optional[int] = None
 
-    sort_by: Optional[Literal["username"]] = None
+    sort_by: Optional[Literal["name"]] = None
 
     _filters = {
-        "username": QueryParams.ilike(UserTable.username),
-        "phone_number": QueryParams.ilike(UserTable.phone_number),
-        "role_id": QueryParams.eq(UserTable.role_id)
+        "name": QueryParams.ilike(UserTable.full_name),
+        # "phone_number": QueryParams.ilike(UserPhoneNumber.phone_number),
+        # "role": QueryParams.eq(UserAccount.role)
     }
 
     # noinspection PyMethodParameters
@@ -71,8 +72,8 @@ class UserParams(QueryParams):
             return None
 
         match v:
-            case "username":
-                return UserTable.username
+            case "name":
+                return UserTable.full_name
             case _:
                 raise ValueError(f"Invalid sort_by value: {v!r}")
 
@@ -87,7 +88,7 @@ class TimeSheetParams(QueryParams):
 
     _filters = {
         "user_id": QueryParams.eq(TimesheetTable.user_id),
-        "machine": QueryParams.ilike(TimesheetTable.machine_name),
+        "machine": QueryParams.ilike(TimesheetTable.machine),
         "description": QueryParams.ilike(TimesheetTable.description)
     }
 

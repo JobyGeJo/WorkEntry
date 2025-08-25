@@ -10,6 +10,7 @@ class AuthTypes(Enum):
     PASSWORD = "LOGIN"
     SESSION = "SESSION"
     TOKEN = "TOKEN"
+    API_KEY = "API_KEY"
 
 class Roles(Enum):
     ADMIN = "Admin"

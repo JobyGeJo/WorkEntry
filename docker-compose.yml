@@ -30,15 +30,15 @@ services:
     ports:
       - "5432:5432"
 
-  mongodb:
-    image: mongo:7
-    container_name: mongodb
-    restart: always
-    env_file: backend/variables.env
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodata:/data/db
+#  mongodb:
+#    image: mongo:7
+#    container_name: mongodb
+#    restart: always
+#    env_file: backend/variables.env
+#    ports:
+#      - "27017:27017"
+#    volumes:
+#      - mongodata:/data/db
 
   redis:
     image: redis:latest
