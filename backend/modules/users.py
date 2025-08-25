@@ -1,18 +1,19 @@
 from functools import wraps
-from typing import Optional
 
+from psycopg2.errors import NotNullViolation
 from sqlalchemy.engine.row import Row
 from sqlalchemy.exc import IntegrityError
 
 from Enums import Roles
 from Exceptions import NotFound, Unauthorized, Conflict, InternalServerError
 from database import with_postgres
-from database.postgres import Session, DBSession
-from database.postgres.tables import UserTable, RoleTable
+from database.postgres import Session
+from database.postgres.tables import UserTable, UserAccount, UserPhoneNumber
+from logger import log_db_error
 from models.models import User
-from models.request import RegisterPayload
+from models.request import RegisterPayload, LoginPayload
 from models.request.params import UserParams
-from utils.passwords import hash_password, verify_password
+from utils.passwords import generate_hash, verify_hash, generate_api_key
 
 
 def model_validate(func):
@@ -42,7 +43,7 @@ def get_user(user_id: int, *, db: Session) -> User:
     data = db.query(
         UserTable
     ).filter(
-        UserTable.id == user_id
+        UserTable.user_id == user_id
     ).first()
 
     if data is None:
@@ -51,15 +52,43 @@ def get_user(user_id: int, *, db: Session) -> User:
     return data
 
 @with_postgres
-def login_user(user_id: int, password: str, *, db: Session) -> Optional[User]:
-    fetched_password: Row = db.query(UserTable.password).filter(UserTable.id == user_id).first()
+def login_user(username: str, password: str, *, db: Session) -> User:
+    data: UserAccount = db.query(UserAccount).filter(UserAccount.username == username).one_or_none()
 
-    if fetched_password is None:
+    if data is None:
         raise NotFound("User not found")
-    elif verify_password(password, fetched_password.password):
-        return get_user(user_id, db=db)
+    elif verify_hash(password, data.password_hash):
+        return get_user(data.user_id, db=db)
     else:
         raise Unauthorized("Incorrect password")
+
+@with_postgres
+def validate_api_key(api_key: str, *, db: Session) -> int:
+    data = db.query(UserAccount.user_id).filter(UserAccount.api_key == api_key).one_or_none()
+    if data.user_id is None:
+        raise Unauthorized("Invalid API key")
+    return data.user_id
+
+@with_postgres
+def get_api_key(user_id: int, *, db: Session) -> str:
+    data = db.query(UserAccount.api_key).filter(UserAccount.user_id == user_id).one_or_none()
+    if data.api_key is None:
+        return update_api_key(user_id, db=db)
+    return data.api_key
+
+@with_postgres
+def update_api_key(user_id: int, *, db: Session) -> str:
+    key = generate_api_key()
+
+    try:
+        db.query(UserAccount).filter(UserAccount.user_id == user_id).update({"api_key": key})
+    except IntegrityError as e:
+        db.rollback()
+        log_db_error(e.detail)
+        raise InternalServerError("Database error while updating api key")
+
+    db.commit()
+    return key
 
 @with_postgres
 @model_validate
@@ -68,21 +97,24 @@ def fetch_users(params: UserParams, *, db: Session) -> list[User]:
 
 @with_postgres
 def does_user_exist(user_id: int, *, db: Session) -> bool:
-    return bool(db.query(UserTable.id).filter(UserTable.id == user_id).first())
+    return bool(db.query(UserTable.user_id).filter(UserTable.user_id == user_id).one_or_none())
 
 @with_postgres
-def create_user(user: RegisterPayload | UserTable, *, db: Session) -> int:
-    if isinstance(user, RegisterPayload):
-        user = UserTable(
-            username=user.username,
-            password=hash_password(user.password),
-            phone_number=user.phone_number,
-        )
+def create_user(payload: RegisterPayload, *, db: Session) -> int:
+    user: UserTable = UserTable(full_name=payload.full_name)
+    user.account = UserAccount(username=payload.username, password_hash=generate_hash(payload.password), role=Roles.EMPLOYEE.value)
+    # user.phone_numbers = UserPhoneNumber(phone_number=payload.phone_number)
+
     try:
         db.add(user)
         db.commit()
         db.refresh(user)
-        return user.id
+        return user.user_id
+
+    except NotNullViolation as e:
+        db.rollback()
+        log_db_error(e)
+        raise InternalServerError("Database error while creating user")
 
     except IntegrityError as e:
         db.rollback()
@@ -95,15 +127,10 @@ def create_user(user: RegisterPayload | UserTable, *, db: Session) -> int:
 
 @with_postgres
 def get_role(user_id: int, *, db: Session) -> Roles:
-    role = (
-        db.query(RoleTable.label)
-        .join(UserTable, UserTable.role_id == RoleTable.id)
-        .filter(UserTable.id == user_id)
-        .one_or_none()
-    )
-    if role is None:
+    data = db.query(UserAccount.role).filter(UserAccount.user_id == user_id).one_or_none()
+    if data is None:
         raise NotFound("User not found")
-    return Roles(role.label)
+    return Roles(data.role)
 
 if __name__ == "__main__":
-    print(get_role(5))
+    print(*fetch_users(UserParams(name="Jon")), sep="\n")

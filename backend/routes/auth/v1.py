@@ -1,14 +1,11 @@
 
 from fastapi import APIRouter, Request, Response, Depends
 
-from Enums import Roles
 from Exceptions import BadRequest
-from models.models import User
 from models.request import LoginPayload, RegisterPayload
 from models.response import Respond
-
-from modules.users import get_user, login_user, create_user
-from utils.authorization import authorize, required_roles
+from modules.users import get_user, login_user, create_user, get_api_key
+from utils.authorization import authorize, authorize_by_session
 from utils.session import create_session, get_session_user_id, delete_session, SESSION_COOKIE_NAME, is_session_valid
 
 router = APIRouter(prefix="/v1")
@@ -20,8 +17,8 @@ def login(request: Request, response: Response, payload: LoginPayload):
     if session_id is not None and is_session_valid(session_id):
         raise BadRequest("Existing Session Found")
 
-    user = login_user(payload.id, payload.password)
-    create_session(payload.id, response)
+    user = login_user(payload.username, payload.password)
+    create_session(user.user_id, response)
     return Respond.success("Logged in successfully", user, headers=response.headers)
 
 
@@ -38,8 +35,12 @@ def session(request: Request):
     return Respond.success("Session Found Successfully", get_user(user_id))
 
 
-@router.post("/logout", dependencies=[Depends(authorize)])
+@router.post("/logout", dependencies=[Depends(authorize_by_session)])
 def logout(request: Request, response: Response):
     delete_session(request, response)
     return Respond.success("Logged out successfully", headers=response.headers)
+
+@router.get("/api-key", dependencies=[Depends(authorize)])
+def api_key(request: Request):
+    return Respond.success("API Key Generated", get_api_key(get_session_user_id(request)))
 

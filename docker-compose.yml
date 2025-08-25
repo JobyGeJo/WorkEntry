@@ -34,9 +34,7 @@ services:
 #    image: mongo:7
 #    container_name: mongodb
 #    restart: always
-#    environment:
-#      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-#      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+#    env_file: backend/variables.env
 #    ports:
 #      - "27017:27017"
 #    volumes:
@@ -47,7 +45,11 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+    volumes:
+      - redisdata:/data
+
 
 volumes:
   pgdata:
-#  mongodata:
+  mongodata:
+  redisdata:

@@ -1,10 +1,11 @@
+import logging
 from logger import log
 
 import redis
 import os
 from functools import wraps
 
-host = os.getenv('HOST')
+host = os.getenv('REDIS_HOST')
 if not host:
     raise EnvironmentError("HOST environment variable not set")
 
