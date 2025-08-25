@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request, Response, Depends
 from Exceptions import BadRequest
 from models.request import LoginPayload, RegisterPayload
 from models.response import Respond
-from modules.users import get_user, login_user, create_user, get_api_key
+from modules.users import fetch_user, login_user, create_user, get_api_key
 from utils.authorization import authorize, authorize_by_session
 from utils.session import create_session, get_session_user_id, delete_session, SESSION_COOKIE_NAME, is_session_valid
 
@@ -32,7 +32,7 @@ def register(response: Response, payload: RegisterPayload):
 @router.get("/session")
 def session(request: Request):
     user_id = get_session_user_id(request)
-    return Respond.success("Session Found Successfully", get_user(user_id))
+    return Respond.success("Session Found Successfully", fetch_user(user_id))
 
 
 @router.post("/logout", dependencies=[Depends(authorize_by_session)])

@@ -39,7 +39,7 @@ def model_validate(func):
 
 @with_postgres
 @model_validate
-def get_user(user_id: int, *, db: Session) -> User:
+def fetch_user(user_id: int, *, db: Session) -> User:
     data = db.query(
         UserTable
     ).filter(
@@ -58,7 +58,7 @@ def login_user(username: str, password: str, *, db: Session) -> User:
     if data is None:
         raise NotFound("User not found")
     elif verify_hash(password, data.password_hash):
-        return get_user(data.user_id, db=db)
+        return fetch_user(data.user_id, db=db)
     else:
         raise Unauthorized("Incorrect password")
 
