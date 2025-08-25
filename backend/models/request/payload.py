@@ -1,15 +1,16 @@
 import re
-from datetime import datetime
+from datetime import date, time
 from typing import Optional, Self
 
 from pydantic import BaseModel, constr, field_validator, model_validator
 
 
 class LoginPayload(BaseModel):
-    id: int
+    username: str
     password: str
 
 class RegisterPayload(BaseModel):
+    full_name: constr(pattern=r"^[A-Za-z ]+$")
     username: constr(pattern=r"^[A-Za-z]+$")  # Only letters, no digits/symbols
     password: constr(min_length=8)
     phone_number: Optional[constr(pattern=r"^\+?\d{10,15}$")] = None
@@ -28,8 +29,9 @@ class TimesheetPayload(BaseModel):
     user_id: Optional[int] = None
     machine: Optional[str]
     description: str
-    start_time: datetime
-    end_time: datetime
+    date: date
+    start_time: time
+    end_time: time
 
     @model_validator(mode="after")
     def check_time_order(self) -> Self:

@@ -9,19 +9,21 @@ from logger import log_db_event, log
 from logger.config import get_rotating_handler
 
 DB_NAME = getenv('POSTGRES_DB')
+DB_USER = getenv('POSTGRES_USER')
 DB_PASS = getenv('POSTGRES_PASSWORD')
-DB_HOST = getenv('HOST')
+DB_HOST = getenv('POSTGRES_HOST')
 
 missing_vars = [var_name for var_name, var_value in {
     'POSTGRES_DB': DB_NAME,
+    'POSTGRES_USER': DB_USER,
     'POSTGRES_PASSWORD': DB_PASS,
-    'HOST': DB_HOST
+    'POSTGRES_HOST': DB_HOST
 }.items() if not var_value]
 
 if missing_vars:
     raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
-DATABASE_URL = f"postgresql://{DB_NAME}:{DB_PASS}@{DB_HOST}/postgres"
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
 
 engine: Engine = create_engine(DATABASE_URL)
 SessionLocal: sessionmaker = sessionmaker(bind=engine, autocommit=False, autoflush=False)
@@ -35,10 +37,10 @@ except OperationalError as e:
     log(f"Failed to connect to the database: {e}", logging.ERROR)
 
 # Suppress noisy sub-loggers
-# logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)
-# logging.getLogger('sqlalchemy.dialects').setLevel(logging.WARNING)
-# logging.getLogger('sqlalchemy.engine.Engine').setLevel(logging.INFO)
-# logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)
+logging.getLogger('sqlalchemy.dialects').setLevel(logging.WARNING)
+logging.getLogger('sqlalchemy.engine.Engine').setLevel(logging.INFO)
+logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 # Add rotating file handler only to core engine
 sqlalchemy_logger = logging.getLogger('sqlalchemy.engine')

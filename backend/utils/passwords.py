@@ -19,4 +19,4 @@ def generate_api_key() -> str:
 
 
 if __name__ == "__main__":
-    print(generate_random_password())
+    print(generate_hash("hashedpassword123"))
