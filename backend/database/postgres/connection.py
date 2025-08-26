@@ -1,6 +1,5 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, declarative_base, DeclarativeMeta, Session
 from os import getenv
 
@@ -28,13 +27,6 @@ DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}"
 engine: Engine = create_engine(DATABASE_URL)
 SessionLocal: sessionmaker = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 Base: DeclarativeMeta = declarative_base()
-
-try:
-    with engine.connect() as conn:
-        conn.execute(text("SELECT 1"))
-    log("Database connection successful!")
-except OperationalError as e:
-    log(f"Failed to connect to the database: {e}", logging.ERROR)
 
 # Suppress noisy sub-loggers
 logging.getLogger('sqlalchemy.pool').setLevel(logging.WARNING)

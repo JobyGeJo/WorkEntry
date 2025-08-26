@@ -1,8 +1,9 @@
 from sqlalchemy import (
     Column, String, BigInteger, Boolean, Date, ForeignKey, TIMESTAMP,
-    func, Index, Text, Time
+    func, Index, Text, Time, Enum
 )
 from sqlalchemy.orm import relationship, declarative_base
+from Enums import Roles
 
 Base = declarative_base()
 
@@ -61,7 +62,7 @@ class UserAccount(Base):
     username = Column(String(150), unique=True, nullable=False)
     password_hash = Column(String(60), nullable=False)
     api_key = Column(String(60), nullable=True)
-    role = Column(String(50), nullable=False)  # e.g., "Admin", "User", "SuperAdmin"
+    role = Column(Enum(Roles, name="role_enum"), nullable=False)  # Index for faster queries
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP, server_default=func.now())
 
@@ -147,39 +148,3 @@ class UserAddress(Base):
             postgresql_where=is_primary.is_(True),
         ),
     )
-
-
-from sqlalchemy.orm import sessionmaker
-
-# -----------------------
-# Database Setup Function
-# -----------------------
-def setup_database(drop_and_recreate=False):
-    """
-    Drops all tables (optional) and creates all database tables defined in models.Base.
-
-    Args:
-        drop_and_recreate (bool): If True, drops all tables first before creating new ones.
-    Returns:
-        SessionLocal: A configured session factory.
-    """
-    from connection import engine
-
-    if drop_and_recreate and input("Are you sure you want to drop and recreate all tables? (y/n): ").lower() == "y":
-        print("⚠️ Dropping all existing tables...")
-        Base.metadata.drop_all(bind=engine)
-
-    print("📦 Creating tables...")
-    Base.metadata.create_all(bind=engine)
-
-    # Create session factory
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-    print("✅ Database setup complete.")
-    return SessionLocal
-
-# -----------------------
-# Example Usage
-# -----------------------
-if __name__ == "__main__":
-    setup_database(drop_and_recreate=True)

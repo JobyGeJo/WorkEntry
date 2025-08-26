@@ -1,7 +1,6 @@
 import re
 from datetime import date, time
 from typing import Optional, Self
-
 from pydantic import BaseModel, constr, field_validator, model_validator
 
 
@@ -10,15 +9,33 @@ class LoginPayload(BaseModel):
     password: str
 
 class RegisterPayload(BaseModel):
-    full_name: constr(pattern=r"^[A-Za-z ]+$")
-    username: constr(pattern=r"^[A-Za-z]+$")  # Only letters, no digits/symbols
-    password: constr(min_length=8)
+    full_name: str
+    username: str
+    password: str
     phone_number: Optional[constr(pattern=r"^\+?\d{10,15}$")] = None
+
+    @field_validator("full_name")
+    def validate_full_name(cls, v):
+        if len(v) < 3:
+            raise ValueError("Full name must be at least 3 characters long")
+        if not re.search(r"^[A-Za-z ]+$", v):
+            raise ValueError("Username must only contain letters")
+        return v.title()
+
+    @field_validator("username")
+    def validate_username(cls, v):
+        if len(v) < 3:
+            raise ValueError("Username must be at least 3 characters long")
+        if not re.search(r"^[A-Za-z ]+$", v):
+            raise ValueError("Username must only contain letters")
+        return v.lower()
 
     # noinspection PyMethodParameters
     @field_validator("password")
     def validate_password(cls, v): # keep 'cls', not 'self'
         # Require at least one digit and one special character
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long")
         if not re.search(r"\d", v):
             raise ValueError("Password must include at least one number")
         if not re.search(r"[!@#$%^&*()_+-=,.?\":{}|<>]", v):
