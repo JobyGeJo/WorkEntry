@@ -2,11 +2,15 @@ import re
 from datetime import date, time
 from typing import Optional, Self
 from pydantic import BaseModel, constr, field_validator, model_validator
+from Enums import Roles
 
 
 class LoginPayload(BaseModel):
     username: str
     password: str
+
+class UpdateRolesPayload(BaseModel):
+    role: Roles
 
 class RegisterPayload(BaseModel):
     full_name: str

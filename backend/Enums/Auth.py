@@ -12,17 +12,30 @@ class AuthTypes(Enum):
     TOKEN = "TOKEN"
     API_KEY = "API_KEY"
 
-class Roles(Enum):
-    ADMIN = "Admin"
-    MANAGER = "Manager"
-    FINANCE = "Finance"
-    EMPLOYEE = "Employee"
-    USER = "User"
+class Roles(str, Enum):
+    OWNER = "owner"
+    ADMIN = "admin"
+    MANAGER = "manager"
+    USER = "user"
 
-class Permissions(Enum):
-    POST = 1
-    GET = 2
-    PUT = 4
-    PATCH = 4
-    DELETE = 8
-    ALL = 15
+    @property
+    def rank(self) -> int:
+        """Define ranking for comparison"""
+        ranking = {
+            Roles.OWNER: 4,
+            Roles.ADMIN: 3,
+            Roles.MANAGER: 2,
+            Roles.USER: 1,
+        }
+        return ranking[self]
+
+    def __lt__(self, other):
+        if isinstance(other, Roles):
+            return self.rank < other.rank
+        return NotImplemented
+
+    def __gt__(self, other):
+        if isinstance(other, Roles):
+            return self.rank > other.rank
+        return NotImplemented
+

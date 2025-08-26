@@ -1,4 +1,4 @@
-from typing import List, Callable
+from typing import List, Callable, Annotated
 
 from fastapi import Request
 from fastapi.params import Depends
@@ -48,13 +48,26 @@ def authorize_by_api_key(request: Request) -> int:
         log_auth_event(request, AuthTypes.API_KEY, AuthEvents.FAILED, None, e.detail)
         raise e
 
+def get_user_role(request: Request) -> Roles:
+    if hasattr(request.state, "role"):
+        role: Roles = request.state.role
+    else:
+        current_user_id: int = authorize(request)
+        role: Roles = get_role(current_user_id)
+        request.state.role = role
+
+    return role
+
+
 def required_roles(*allowed_roles: List[Roles]) -> Callable:
 
     def check_permission(request: Request) -> bool:
-        current_user_id: int = authorize(request)
-        role: Roles = get_role(current_user_id)
-        if not (role in allowed_roles or role is Roles.ADMIN):
+        role: Roles = get_user_role(request)
+        if not (role in allowed_roles or role is Roles.ADMIN or role is Roles.OWNER):
             raise Forbidden("You don't have permission to access this resource")
         return True
 
     return check_permission
+
+Authorize = Annotated[int, Depends(authorize)]
+GetUserRole = Annotated[Roles, Depends(get_user_role)]

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request, Response, Depends
 from Exceptions import BadRequest
 from models.request import LoginPayload, RegisterPayload
 from models.response import Respond
-from modules.users import fetch_user, login_user, create_user, get_api_key
+from modules.users import fetch_user, login_user, create_user, get_api_key, update_api_key
 from utils.authorization import authorize, authorize_by_session
 from utils.session import create_session, get_session_user_id, delete_session, SESSION_COOKIE_NAME, is_session_valid
 
@@ -40,7 +40,15 @@ def logout(request: Request, response: Response):
     delete_session(request, response)
     return Respond.success("Logged out successfully", headers=response.headers)
 
-@router.get("/api-key", dependencies=[Depends(authorize)])
+@router.get("/api-key", dependencies=[Depends(authorize_by_session)])
 def api_key(request: Request):
-    return Respond.success("API Key Generated", get_api_key(get_session_user_id(request)))
+    return Respond.success("API Key Fetched/Generated", get_api_key(get_session_user_id(request)))
+
+@router.patch("/api-key", dependencies=[Depends(authorize_by_session)])
+def change_api_key(request: Request):
+    return Respond.success("API Key Updated", update_api_key(get_session_user_id(request)))
+
+@router.delete("/api-key", dependencies=[Depends(authorize_by_session)])
+def delete_api_key(request: Request):
+    return Respond.success("API Key Deleted", update_api_key(get_session_user_id(request), delete=True))
 
