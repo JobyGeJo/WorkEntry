@@ -54,13 +54,15 @@ class QueryParams(BaseModel):
 
 class UserParams(QueryParams):
     name: Optional[str] = None
+    gender: Optional[Literal["Male", "Female"]] = None
     phone_number: Optional[str] = None
     role_id: Optional[int] = None
 
-    sort_by: Optional[Literal["name"]] = None
+    sort_by: Optional[Literal["name", "gender"]] = None
 
     _filters = {
         "name": QueryParams.ilike(UserTable.full_name),
+        "gender": QueryParams.eq(UserTable.gender),
         # "phone_number": QueryParams.ilike(UserPhoneNumber.phone_number),
         # "role": QueryParams.eq(UserAccount.role)
     }

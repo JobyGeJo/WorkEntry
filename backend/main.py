@@ -1,26 +1,5 @@
-# main.py
-import time
-from fastapi import FastAPI
-from fastapi.exceptions import RequestValidationError
 from starlette.middleware.cors import CORSMiddleware
-from starlette.requests import Request
-from starlette.responses import JSONResponse
-
-from Exceptions import ResponseError, UnprocessableContent, Unauthorized
-from logger import log_request, log_error
-from logger.app import log_critical
-from models.response import Respond
-from routes.api import api_router
-# from routes.utils import router as utils_router
-from routes.auth import router as auth_router
-
-app = FastAPI()
-
-# Include auth routes with optional prefix
-app.include_router(auth_router)
-app.include_router(api_router)
-# app.include_router(utils_router)
-
+from routes import app
 
 origins = [
     "http://localhost:5173",
@@ -36,31 +15,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.exception_handler(ResponseError)
-def response_exception_handler(request: Request, exc: ResponseError) -> JSONResponse:
-    log_error(request, exc)
-    if isinstance(exc, Unauthorized):
-        return Respond.unauthorized(exc.detail, exc.delete_cookie)
-    return Respond.send_error(exc)
+import redis
+from database.redis import get_redis_client, host
+from logger import log
+import logging
 
-@app.exception_handler(RequestValidationError)
-def request_validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
-    issues = {
-        err["loc"][-1]: err["msg"] for err in exc.errors()
-    }
-    error = UnprocessableContent("Invalid Parameters")
-    log_error(request, error)
-    return Respond.unprocessable_content(issues)
+try:
+    get_redis_client().ping()
+    log(f"Redis connection successful!")
+except redis.RedisError as e:
+    log(f"Failed to connect to the Redis: {e}", logging.ERROR)
+    raise ConnectionError(f"Cannot connect to Redis at {host}: {e}")
 
-@app.exception_handler(Exception)
-def exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    log_critical(request, exc)
-    return Respond.internal_server_error(type(exc).__name__)
+from database.postgres.connection import engine
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 
-@app.middleware("http")
-async def log_request_time(request: Request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    duration = (time.time() - start_time) * 1000
-    log_request(request, response.status_code, duration)
-    return response
+try:
+    with engine.connect() as conn:
+        conn.execute(text("SELECT 1"))
+    log("Database connection successful!")
+except OperationalError as e:
+    log(f"Failed to connect to the database: {e}", logging.ERROR)
