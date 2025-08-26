@@ -3,7 +3,7 @@ from typing import Optional
 from jose import JWTError, jwt
 
 from Exceptions import Unauthorized
-from modules.users import get_user
+from modules.users import fetch_user
 
 # You should store this securely (e.g., in environment variables)
 SECRET_KEY = "your_secret_key"
@@ -41,7 +41,7 @@ def get_current_user(Authorization: Optional[str] = Header(None)):
 
     token = Authorization.split(" ")[1]
     user_id = verify_token(token)["sub"]
-    user = get_user(user_id)
+    user = fetch_user(user_id)
     if not user:
         raise Unauthorized("User not found")
     return user

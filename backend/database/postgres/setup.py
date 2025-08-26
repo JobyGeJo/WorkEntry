@@ -1,5 +1,3 @@
-from sqlalchemy.sql.functions import user
-
 from database.postgres import DBSession
 from tables import UserTable, UserAccount, UserEmail, UserPhoneNumber, UserAddress
 from connection import SessionLocal
