@@ -5,18 +5,6 @@
   text-align: center;
 }
 
-html, body {
-  margin: 0; /* Remove default margin */
-  padding: 0; /* Remove default padding */
-  height: 100%; /* Ensure it fills full viewport height */
-
-  background-image: url('./assets/background.jpg');
-  background-size: cover;        /* Scale to cover entire area */
-  background-repeat: no-repeat;  /* No tiling */
-  background-position: center;   /* Center the image */
-}
-
-
 .logo {
   height: 6em;
   padding: 1.5em;
