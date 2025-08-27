@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import authServices from "../services/authService";
+import { FiLogIn } from 'react-icons/fi';
 
 function Login({ setUser }) {
     const [username, setUsername] = useState('');
@@ -14,6 +15,7 @@ function Login({ setUser }) {
         setError('');
         try {
             const response = await authServices.login({ username, password });
+            
             if (response.status === 200) {
                 const userData = response.data.data;
                 userData.role = userData.account?.role || 'Employee';
@@ -21,7 +23,7 @@ function Login({ setUser }) {
                 navigate('/dashboard');
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed.');
+            setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
         }
     };
 
@@ -44,8 +46,9 @@ function Login({ setUser }) {
                         className="w-full px-4 py-3 border border-border text-text-primary rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
                         type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required
                     />
-                    <button type="submit" className="w-full py-3 px-4 bg-accent text-white font-semibold rounded-md shadow-sm hover:bg-blue-700">
-                        Sign In
+                    <button type="submit" className="w-full py-3 px-4 bg-accent text-white font-semibold rounded-md shadow-sm hover:bg-blue-700 flex items-center justify-center space-x-2">
+                        <FiLogIn />
+                        <span>Sign In</span>
                     </button>
                     {error && <p className="text-red-500 text-center font-medium">{error}</p>}
                 </form>

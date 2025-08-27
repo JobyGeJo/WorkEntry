@@ -1,32 +1,29 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-baseURL: '/api/v1', // The proxy will handle the redirect
-withCredentials: true, // Crucial for sending session cookies
+  baseURL: '/api/v1',
+  withCredentials: true,
 });
 
 // Timesheet Services
-const createTimesheet = (payload) => {
-return apiClient.post('/timesheets', payload);
-};
+const createTimesheet = (payload) => apiClient.post('/timesheets', payload);
+const getMyTimesheets = (params) => apiClient.get('/timesheets', { params });
 
-const getMyTimesheets = () => {
-// The backend uses the session to identify the user
-return apiClient.get('/timesheets');
+// ADD THIS NEW FUNCTION
+const getTimesheetById = (timesheetId) => {
+  return apiClient.get(`/timesheets/${timesheetId}`);
 };
 
 // Admin Services
-const getAllUsers = () => {
-return apiClient.get('/users');
-};
-
-const getTimesheetsByUserId = (userId) => {
-return apiClient.get(`/timesheets?user_id=${userId}`);
+const getAllUsers = () => apiClient.get('/users');
+const getTimesheetsByUserId = (userId, params) => {
+  return apiClient.get(`/timesheets`, { params: { user_id: userId, ...params } });
 };
 
 export default {
-createTimesheet,
-getMyTimesheets,
-getAllUsers,
-getTimesheetsByUserId,
+  createTimesheet,
+  getMyTimesheets,
+  getTimesheetById, // <-- And export it here
+  getAllUsers,
+  getTimesheetsByUserId,
 };
