@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import authServices from '../services/authService';
+import { motion } from 'framer-motion';
 
 export default function Navbar({ user, setUser }) {
   const navigate = useNavigate();
@@ -21,15 +21,11 @@ export default function Navbar({ user, setUser }) {
         <div className="flex items-center space-x-6">
           {user ? (
             <>
-              {/* This is the new link to the profile page */}
               <Link to="/profile" className="text-text-secondary hover:text-accent font-medium transition-colors">Profile</Link>
-              
               <Link to="/dashboard" className="text-text-secondary hover:text-accent font-medium transition-colors">Dashboard</Link>
-              
               {user.role === 'Admin' && (
                 <Link to="/admin" className="text-text-secondary hover:text-accent font-medium transition-colors">Admin Panel</Link>
               )}
-              
               <button onClick={handleLogout} className="text-text-secondary hover:text-accent font-medium transition-colors">Logout</button>
             </>
           ) : (

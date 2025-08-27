@@ -1,20 +1,46 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import apiService from '../services/apiService';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiPlusCircle } from 'react-icons/fi';
+import { FiPlusCircle, FiClock } from 'react-icons/fi';
+import apiService from '../services/apiService';
 
 const TimesheetForm = ({ onUpdate }) => {
-    // Form logic remains the same
-    const [formData, setFormData] = useState({ machine: '', description: '', date: new Date().toISOString().split('T')[0], start_time: '', end_time: '' });
+    // A robust function to get the current time in HH:MM format
+    const getFormattedCurrentTime = () => {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+    };
+
+    const [formData, setFormData] = useState({ 
+        machine: '', 
+        description: '', 
+        date: new Date().toISOString().split('T')[0], 
+        start_time: getFormattedCurrentTime(), 
+        end_time: getFormattedCurrentTime() 
+    });
+    
     const [error, setError] = useState('');
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
     const handleSubmit = async (e) => {
-        e.preventDefault(); setError('');
+        e.preventDefault();
+        setError('');
         try {
             await apiService.createTimesheet(formData);
             onUpdate();
-            setFormData({ machine: '', description: '', date: new Date().toISOString().split('T')[0], start_time: '', end_time: '' });
-        } catch (err) { setError(err.response?.data?.message || 'Failed to submit timesheet.'); }
+            // Reset form to new, valid current times
+            setFormData({ 
+                machine: '', 
+                description: '', 
+                date: new Date().toISOString().split('T')[0], 
+                start_time: getFormattedCurrentTime(), 
+                end_time: getFormattedCurrentTime() 
+            });
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to submit timesheet.');
+        }
     };
 
     return (
@@ -25,12 +51,12 @@ const TimesheetForm = ({ onUpdate }) => {
         >
             <h2 className="text-2xl font-bold text-text-primary">Log New Work</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <input name="machine" placeholder="Machine Name/ID" onChange={handleChange} required className="w-full px-4 py-2 border border-border rounded-md" />
+                <input name="machine" placeholder="Machine Name/ID" value={formData.machine} onChange={handleChange} required className="w-full px-4 py-2 border border-border rounded-md" />
                 <input name="date" type="date" value={formData.date} onChange={handleChange} required className="w-full px-4 py-2 border border-border rounded-md" />
-                <input name="start_time" type="time" onChange={handleChange} required className="w-full px-4 py-2 border border-border rounded-md" />
-                <input name="end_time" type="time" onChange={handleChange} required className="w-full px-4 py-2 border border-border rounded-md" />
+                <input name="start_time" type="time" value={formData.start_time} onChange={handleChange} required className="w-full px-4 py-2 border border-border rounded-md" />
+                <input name="end_time" type="time" value={formData.end_time} onChange={handleChange} required className="w-full px-4 py-2 border border-border rounded-md" />
             </div>
-            <textarea name="description" placeholder="Task Description..." onChange={handleChange} required className="w-full px-4 py-2 border border-border rounded-md min-h-[80px]" />
+            <textarea name="description" placeholder="Task Description..." value={formData.description} onChange={handleChange} required className="w-full px-4 py-2 border border-border rounded-md min-h-[80px]" />
             <button type="submit" className="w-full py-2 bg-accent text-white font-semibold rounded-md flex items-center justify-center space-x-2">
               <FiPlusCircle /> <span>Submit Work Log</span>
             </button>
@@ -40,45 +66,37 @@ const TimesheetForm = ({ onUpdate }) => {
 };
 
 export default function Dashboard({ user }) {
-    const [timesheets, setTimesheets] = useState([]);
-    const fetchTimesheets = useCallback(async () => {
-        try {
-            const response = await apiService.getMyTimesheets();
-            setTimesheets(response.data.data || []);
-        } catch (error) { console.error("Failed to fetch timesheets", error); }
-    }, []);
-
-    useEffect(() => { fetchTimesheets(); }, [fetchTimesheets]);
+    const navigate = useNavigate();
+    
+    const handleUpdate = () => {
+        console.log("Work log submitted successfully!");
+    };
 
     return (
         <div className="container mx-auto p-6">
-            <h1 className="text-3xl font-bold text-text-primary mb-6">Welcome, {user?.full_name || 'Employee'}!</h1>
-            <TimesheetForm onUpdate={fetchTimesheets} />
-            <div className="bg-primary border border-border rounded-lg shadow-sm overflow-hidden">
-                <h2 className="text-2xl font-bold text-text-primary p-6">Your Work Logs</h2>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                        <thead className="bg-secondary">
-                            <tr>
-                                <th className="px-6 py-3 text-left font-semibold text-text-secondary uppercase">Date</th>
-                                <th className="px-6 py-3 text-left font-semibold text-text-secondary uppercase">Machine</th>
-                                <th className="px-6 py-3 text-left font-semibold text-text-secondary uppercase">Description</th>
-                                <th className="px-6 py-3 text-left font-semibold text-text-secondary uppercase">Time</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                            {timesheets.map((ts) => (
-                                <tr key={ts.id} className="hover:bg-secondary transition-colors">
-                                    <td className="px-6 py-4 text-text-primary">{ts.date}</td>
-                                    <td className="px-6 py-4 text-text-primary">{ts.machine}</td>
-                                    <td className="px-6 py-4 text-text-secondary">{ts.description}</td>
-                                    <td className="px-6 py-4 text-text-primary">{ts.start_time} - {ts.end_time}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+            <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+                <h1 className="text-3xl font-bold text-text-primary mb-2">Welcome, {user?.full_name || 'Employee'}!</h1>
+                <p className="text-text-secondary mb-8">Ready to log your work for the day?</p>
+            </motion.div>
+            
+            <TimesheetForm onUpdate={handleUpdate} />
+
+            <motion.div 
+                className="bg-primary p-6 rounded-lg border border-border shadow-sm text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+            >
+                <h2 className="text-xl font-bold text-text-primary mb-4">View Your History</h2>
+                <p className="text-text-secondary mb-6">Access, search, and filter your complete work log history.</p>
+                <button 
+                    onClick={() => navigate('/my-work-logs')}
+                    className="bg-accent text-white font-semibold px-6 py-3 rounded-md flex items-center justify-center space-x-2 mx-auto hover:bg-blue-700 transition-colors"
+                >
+                    <FiClock />
+                    <span>View Full History</span>
+                </button>
+            </motion.div>
         </div>
     );
 }

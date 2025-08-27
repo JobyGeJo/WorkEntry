@@ -12,8 +12,8 @@ export default defineConfig({
     //   cert: fs.readFileSync(path.resolve(__dirname, 'cert/192.168.1.20.pem'))
     // },
     proxy: {
-      '/auth': 'http://localhost:8000',
-      '/api': 'http://localhost:8000'
-    }
+  '/auth': 'http://127.0.0.1:8001',
+  '/api': 'http://127.0.0.1:8001'
+}
   }
 })
