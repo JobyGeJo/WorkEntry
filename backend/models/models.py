@@ -3,6 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel, PrivateAttr, Field
 
+from Enums import Roles
+
 
 class __default_model(BaseModel):
     model_config = {
@@ -16,6 +18,9 @@ class User(__default_model):
     gender: Optional[str]
     # created_at: datetime
     # updated_at: datetime
+
+class UserDetail(User):
+    role: Roles
 
 class Timesheet(__default_model):
     id: int

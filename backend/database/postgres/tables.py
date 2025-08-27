@@ -2,6 +2,7 @@ from sqlalchemy import (
     Column, String, BigInteger, Boolean, Date, ForeignKey, TIMESTAMP,
     func, Index, Text, Time, Enum
 )
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, declarative_base
 from Enums import Roles
 
@@ -50,6 +51,10 @@ class UserTable(Base):
     phone_numbers = relationship("UserPhoneNumber", back_populates="user", cascade="all, delete-orphan")
     addresses = relationship("UserAddress", back_populates="user", cascade="all, delete-orphan")
     timesheets = relationship("TimesheetTable", foreign_keys=[TimesheetTable.user_id], back_populates="user", cascade="all, delete-orphan")
+
+    @hybrid_property
+    def role(self):
+        return self.account.role if self.account else None
 
 # -----------------------
 # 2. User Accounts (for login + roles)
