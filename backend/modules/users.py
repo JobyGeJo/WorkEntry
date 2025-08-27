@@ -3,6 +3,7 @@ from typing import Optional
 
 from psycopg2.errors import NotNullViolation
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
 from Enums import Roles
 from Exceptions import NotFound, Unauthorized, Conflict, InternalServerError, Forbidden, BadRequest
@@ -10,7 +11,7 @@ from database import with_postgres
 from database.postgres import Session
 from database.postgres.tables import UserTable, UserAccount
 from logger import log_db_error
-from models.models import User
+from models.models import User, UserDetail
 from models.request import RegisterPayload
 from models.request.params import UserParams
 from utils.passwords import generate_hash, verify_hash, generate_api_key
@@ -25,7 +26,7 @@ def model_validate(func):
             return None
 
         elif isinstance(val, UserTable):
-            return User.model_validate(val)
+            return UserDetail.model_validate(val)
 
         elif isinstance(val, list) and all(isinstance(i, UserTable) for i in val):
             return [User.model_validate(i) for i in val]
@@ -40,11 +41,7 @@ def model_validate(func):
 @with_postgres
 @model_validate
 def fetch_user(user_id: int, *, db: Session) -> User:
-    data = db.query(
-        UserTable
-    ).filter(
-        UserTable.user_id == user_id
-    ).first()
+    data = db.query(UserTable).options(joinedload(UserTable.account)).filter(UserTable.user_id == user_id).first()
 
     if data is None:
         raise NotFound("User not found")
@@ -215,4 +212,4 @@ def update_role(user_id: int, role: Roles, current_user_id: Optional[int] = None
             raise InternalServerError("Unknown role")
 
 if __name__ == "__main__":
-    print(update_role(2, Roles.MANAGER, 1), sep="\n")
+    print(fetch_user(1).json(), sep="\n")
