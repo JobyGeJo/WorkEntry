@@ -24,7 +24,15 @@ export default function Register() {
       setSuccess('Registration successful! Please log in.');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed.');
+      // FIX: Display the specific validation error from the backend
+      const validationIssues = err.response?.data?.issues;
+      if (validationIssues) {
+          const firstErrorKey = Object.keys(validationIssues)[0];
+          const errorMessage = `${firstErrorKey}: ${validationIssues[firstErrorKey]}`;
+          setError(errorMessage.charAt(0).toUpperCase() + errorMessage.slice(1));
+      } else {
+          setError(err.response?.data?.message || 'Registration failed.');
+      }
     }
   };
 
@@ -40,14 +48,14 @@ export default function Register() {
         <p className="text-center text-text-secondary mb-6">Join your team and start tracking your work.</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input name="full_name" placeholder="Full Name" onChange={handleChange} required className="w-full px-4 py-3 border border-border rounded-md" />
-          <input name="username" placeholder="Username (no spaces or numbers)" onChange={handleChange} required className="w-full px-4 py-3 border border-border rounded-md" />
+          <input name="username" placeholder="Username (letters and numbers only)" onChange={handleChange} required className="w-full px-4 py-3 border border-border rounded-md" />
           <input name="password" type="password" placeholder="Password (min 8 chars, 1 number, 1 symbol)" onChange={handleChange} required className="w-full px-4 py-3 border border-border rounded-md" />
           <input name="phone_number" placeholder="Phone Number (optional)" onChange={handleChange} className="w-full px-4 py-3 border border-border rounded-md" />
           <button type="submit" className="w-full py-3 bg-accent text-white font-semibold rounded-md hover:bg-blue-700">
             Sign Up
           </button>
-          {error && <p className="text-red-500 text-center">{error}</p>}
-          {success && <p className="text-green-500 text-center">{success}</p>}
+          {error && <p className="text-red-500 text-center font-semibold mt-2">{error}</p>}
+          {success && <p className="text-green-500 text-center font-semibold mt-2">{success}</p>}
         </form>
         <p className="text-center text-text-secondary text-sm mt-6">
           Already have an account? <Link to="/login" className="text-accent font-semibold hover:underline">Sign In</Link>
