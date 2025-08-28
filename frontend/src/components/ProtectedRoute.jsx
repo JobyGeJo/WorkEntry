@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import authServices from "../services/authService"; // <-- IMPORT IT HERE
+import authServices from "../services/authService";
 
 function ProtectedRoute({ children, setUser, adminOnly = false }) {
     const [loading, setLoading] = useState(true);
@@ -9,11 +9,8 @@ function ProtectedRoute({ children, setUser, adminOnly = false }) {
     useEffect(() => {
         const checkSession = async () => {
             try {
-                // USE IT HERE to check the session
                 const res = await authServices.session();
                 const userData = res.data.data;
-                
-                // Assign a role based on the backend data
                 userData.role = userData.account?.role || "Employee";
                 
                 setAuthenticatedUser(userData);
