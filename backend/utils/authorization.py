@@ -24,7 +24,6 @@ def authorize(request: Request) -> int:
     else:
         raise Unauthorized("Authentication Required")
 
-    # cache it
     request.state.current_user_id = user_id
     return user_id
 

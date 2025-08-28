@@ -9,11 +9,12 @@ from Enums import Roles
 from Exceptions import NotFound, Unauthorized, Conflict, InternalServerError, Forbidden, BadRequest
 from database import with_postgres
 from database.postgres import Session
-from database.postgres.tables import UserTable, UserAccount
+from database.postgres.tables import UserTable, UserAccount, UserEmail, UserAddress, UserPhoneNumber
 from logger import log_db_error
-from models.models import User, UserDetail
+from models.models import User, UserDetails, UserWithRole
 from models.request import RegisterPayload
 from models.request.params import UserParams
+from models.request.payload import UserUpdatePayload
 from utils.passwords import generate_hash, verify_hash, generate_api_key
 
 
@@ -26,7 +27,7 @@ def model_validate(func):
             return None
 
         elif isinstance(val, UserTable):
-            return UserDetail.model_validate(val)
+            return UserDetails.model_validate(val)
 
         elif isinstance(val, list) and all(isinstance(i, UserTable) for i in val):
             return [User.model_validate(i) for i in val]
@@ -39,14 +40,19 @@ def model_validate(func):
 
 
 @with_postgres
-@model_validate
-def fetch_user(user_id: int, *, db: Session) -> User:
+def fetch_user(user_id: int, *, db: Session) -> UserWithRole:
     data = db.query(UserTable).options(joinedload(UserTable.account)).filter(UserTable.user_id == user_id).first()
 
     if data is None:
         raise NotFound("User not found")
 
-    return data
+    return UserWithRole.model_validate(data)
+
+@with_postgres
+def fetch_user_details(user_id: int, *, db: Session) -> UserDetails:
+    return UserDetails.model_validate(
+        db.query(UserTable).options(joinedload(UserTable.account)).filter(UserTable.user_id == user_id).first()
+    )
 
 @with_postgres
 def login_user(username: str, password: str, *, db: Session) -> User:
@@ -211,5 +217,67 @@ def update_role(user_id: int, role: Roles, current_user_id: Optional[int] = None
         case _:
             raise InternalServerError("Unknown role")
 
+# @with_postgres
+# def update_user_details(user_id: int, payload: UserUpdatePayload, *, db: Session) -> None:
+#     user = db.query(UserTable).filter(UserTable.user_id == user_id).first()
+#     if not user:
+#         raise Exception("User not found")
+#
+#     # Update core fields
+#     if payload.full_name is not None:
+#         user.full_name = payload.full_name
+#     if payload.dob is not None:
+#         user.dob = payload.dob
+#     if payload.gender is not None:
+#         user.gender = payload.gender
+#
+#     # Update phone numbers
+#     for phone_payload in payload.phone_numbers:
+#         phone = db.query(UserPhoneNumber).filter(
+#             UserPhoneNumber.phone_id == phone_payload.phone_id,
+#             UserPhoneNumber.user_id == user_id
+#         ).first()
+#         if phone:
+#             if phone_payload.phone_number is not None:
+#                 phone.phone_number = phone_payload.phone_number
+#             if phone_payload.type is not None:
+#                 phone.type = phone_payload.type
+#
+#     # Update emails
+#     for email_payload in payload.emails:
+#         email = db.query(UserEmail).filter(
+#             UserEmail.email_id == email_payload.email_id,
+#             UserEmail.user_id == user_id
+#         ).first()
+#         if email:
+#             if email_payload.email is not None:
+#                 email.email = email_payload.email
+#
+#     # Update addresses
+#     for addr_payload in payload.addresses:
+#         addr = db.query(UserAddress).filter(
+#             UserAddress.address_id == addr_payload.address_id,
+#             UserAddress.user_id == user_id
+#         ).first()
+#         if addr:
+#             if addr_payload.address_line1 is not None:
+#                 addr.address_line1 = addr_payload.address_line1
+#             if addr_payload.address_line2 is not None:
+#                 addr.address_line2 = addr_payload.address_line2
+#             if addr_payload.city is not None:
+#                 addr.city = addr_payload.city
+#             if addr_payload.state is not None:
+#                 addr.state = addr_payload.state
+#             if addr_payload.country is not None:
+#                 addr.country = addr_payload.country
+#             if addr_payload.postal_code is not None:
+#                 addr.postal_code = addr_payload.postal_code
+#             if addr_payload.type is not None:
+#                 addr.type = addr_payload.type
+#
+#     db.commit()
+#     db.refresh(user)
+#     return user
+
 if __name__ == "__main__":
-    print(fetch_user(1).json(), sep="\n")
+    print(fetch_user_details(1).model_dump_json(indent=2), sep="\n")
