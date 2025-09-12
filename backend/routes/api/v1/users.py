@@ -6,7 +6,8 @@ from Exceptions import Forbidden
 from models.request.params import UserParams
 from models.request.payload import UpdateRolesPayload
 from models.response import Respond
-from modules.users import fetch_users, update_role, fetch_user_details
+from modules.users import fetch_users, update_role, fetch_user_details, fetch_user_phone_numbers, fetch_user_emails, \
+    fetch_user_addresses
 from utils.authorization import authorize
 
 users = APIRouter(prefix="/users", tags=["users"])
@@ -18,6 +19,18 @@ def get_users(params: UserParams = Depends()) -> JSONResponse:
 @users.get("/{user_id}")
 def get_user(user_id: int) -> JSONResponse:
     return Respond.success("User data fetched successfully", fetch_user_details(user_id))
+
+@users.get("/{user_id}/phone_numbers")
+def get_user_phone_numbers(user_id: int) -> JSONResponse:
+    return Respond.success("User data fetched successfully", fetch_user_phone_numbers(user_id))
+
+@users.get("/{user_id}/emails")
+def get_user_emails(user_id: int) -> JSONResponse:
+    return Respond.success("User data fetched successfully", fetch_user_emails(user_id))
+
+@users.get("/{user_id}/addresses")
+def get_user_addresses(user_id: int) -> JSONResponse:
+    return Respond.success("User data fetched successfully", fetch_user_addresses(user_id))
 
 # @users.post("", status_code=201)
 # def post_user() -> JSONResponse:

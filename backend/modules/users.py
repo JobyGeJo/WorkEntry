@@ -9,12 +9,11 @@ from Enums import Roles
 from Exceptions import NotFound, Unauthorized, Conflict, InternalServerError, Forbidden, BadRequest
 from database import with_postgres
 from database.postgres import Session
-from database.postgres.tables import UserTable, UserAccount, UserEmail, UserAddress, UserPhoneNumber
+from database.postgres.tables import UserTable, UserAccount, UserPhoneNumber, UserEmail, UserAddress
 from logger import log_db_error
-from models.models import User, UserDetails, UserWithRole
+from models.models import User, UserDetails, UserWithRole, PhoneNumber, Email, Address
 from models.request import RegisterPayload
 from models.request.params import UserParams
-from models.request.payload import UserUpdatePayload
 from utils.passwords import generate_hash, verify_hash, generate_api_key
 
 
@@ -53,6 +52,21 @@ def fetch_user_details(user_id: int, *, db: Session) -> UserDetails:
     return UserDetails.model_validate(
         db.query(UserTable).options(joinedload(UserTable.account)).filter(UserTable.user_id == user_id).first()
     )
+
+@with_postgres
+def fetch_user_phone_numbers(user_id: int, *, db: Session) -> list[str]:
+    data = db.query(UserPhoneNumber).filter(UserPhoneNumber.user_id == user_id).all()
+    return [PhoneNumber.model_validate(number) for number in data]
+
+@with_postgres
+def fetch_user_emails(user_id: int, *, db: Session) -> list[str]:
+    data = db.query(UserEmail).filter(UserEmail.user_id == user_id).all()
+    return [Email.model_validate(number) for number in data]
+
+@with_postgres
+def fetch_user_addresses(user_id: int, *, db: Session) -> list[str]:
+    data = db.query(UserAddress).filter(UserAddress.user_id == user_id).all()
+    return [Address.model_validate(number) for number in data]
 
 @with_postgres
 def login_user(username: str, password: str, *, db: Session) -> User:

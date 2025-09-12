@@ -3,7 +3,7 @@ from typing import Optional, Literal, Self, Callable, Any
 
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field, field_validator, model_validator, PrivateAttr
-from sqlalchemy import Column, BinaryExpression, ColumnElement
+from sqlalchemy import Column, BinaryExpression, ColumnElement, desc
 from sqlalchemy.orm import Query as SQLQuery
 
 from database.postgres.tables import UserAccount, UserPhoneNumber, UserTable
@@ -15,8 +15,10 @@ class QueryParams(BaseModel):
     page: int = Field(1, ge=1)
     limit: int = Field(10, ge=1)
 
-    _pagination: Optional[Pagination] = PrivateAttr(None)
+    sort_by: Optional[str] = None
+    order: Literal["asc", "desc"] = "asc"
 
+    _pagination: Optional[Pagination] = PrivateAttr(None)
     _filters: dict[str, Callable] = {}
 
     @property
@@ -34,7 +36,19 @@ class QueryParams(BaseModel):
 
     def apply_sort(self, query: SQLQuery) -> SQLQuery:
         if self.sort_by:
-            query = query.order_by(self.sort_by)
+            sort_fields = (
+                self.sort_by if isinstance(self.sort_by, (list, tuple)) else [self.sort_by]
+            )
+
+            order_clauses = []
+            for field in sort_fields:
+                if self.order == "desc":
+                    order_clauses.append(desc(field))
+                else:
+                    order_clauses.append(field)
+
+            query = query.order_by(*order_clauses)
+
         return query
 
     def build(self, base_query: SQLQuery) -> SQLQuery:
@@ -86,7 +100,7 @@ class TimeSheetParams(QueryParams):
     from_date: Optional[date] = None
     to_date: Optional[date] = None
 
-    sort_by: Optional[Literal["machine", "start_time", "end_time"]] = None
+    sort_by: Optional[Literal["machine", "date"]] = "date"
 
     _filters = {
         "user_id": QueryParams.eq(TimesheetTable.user_id),
@@ -119,11 +133,9 @@ class TimeSheetParams(QueryParams):
 
         match v:
             case "machine":
-                return TimesheetTable.machine_name
-            case "start_time":
-                return TimesheetTable.start_time
-            case "end_time":
-                return TimesheetTable.end_time
+                return TimesheetTable.machine
+            case "date":
+                return TimesheetTable.date, TimesheetTable.start_time
             case _:
                 raise ValueError(f"Invalid sort_by value: {v!r}")
 

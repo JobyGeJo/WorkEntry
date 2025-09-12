@@ -3,7 +3,7 @@ from typing import List, Union
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, Query as SQLQuery
 
-from Exceptions import InternalServerError
+from Exceptions import InternalServerError, NotFound
 from database import with_postgres
 from database.postgres.tables import TimesheetTable, UserTable
 from models.models import Timesheet, TimesheetWithUser
@@ -22,7 +22,7 @@ def fetch_timesheets(params: TimeSheetParams, *, db: Session) -> List[Timesheet]
 def fetch_timesheet(timesheet_id: int, *, db: Session) -> Union[Timesheet, None]:
     timesheet: TimesheetTable = db.query(TimesheetTable).filter(TimesheetTable.id == timesheet_id).one_or_none()
     if timesheet is None:
-        return None
+        raise NotFound("Activity not found")
     return TimesheetWithUser.model_validate(timesheet)
 
 @with_postgres
