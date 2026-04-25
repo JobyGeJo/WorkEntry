@@ -46,6 +46,34 @@ class RegisterPayload(BaseModel):
             raise ValueError("Password must include at least one special character")
         return v
 
+class PhoneNumberUpdatePayload(BaseModel):
+    phone_id: int
+    phone_number: Optional[str]
+    type: Optional[str] = None
+
+class EmailUpdatePayload(BaseModel):
+    email_id: int
+    email: str = None
+
+class AddressUpdatePayload(BaseModel):
+    address_id: int
+    address_line1: Optional[str] = None
+    address_line2: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    postal_code: Optional[str] = None
+    type: Optional[str] = None
+
+class UserUpdatePayload(BaseModel):
+    full_name: Optional[str] = None
+    dob: Optional[date] = None
+    gender: Optional[str] = None
+
+    phone_number: Optional[PhoneNumberUpdatePayload] = None
+    email: Optional[EmailUpdatePayload] = None
+    address: Optional[AddressUpdatePayload] = None
+
 class TimesheetPayload(BaseModel):
     user_id: Optional[int] = None
     machine: Optional[str]

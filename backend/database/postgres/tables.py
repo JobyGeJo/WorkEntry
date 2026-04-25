@@ -32,6 +32,10 @@ class TimesheetTable(Base):
     user = relationship("UserTable", foreign_keys=[user_id], back_populates="timesheets")
     reviewer = relationship("UserTable", foreign_keys=[reviewed_by])
 
+    @hybrid_property
+    def person(self):
+        return self.user.full_name if self.user else None
+
 # -----------------------
 # 1. Users
 # -----------------------
