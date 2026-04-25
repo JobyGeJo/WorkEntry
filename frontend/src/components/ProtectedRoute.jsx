@@ -11,8 +11,7 @@ function ProtectedRoute({ children, setUser, adminOnly = false }) {
             try {
                 const res = await authServices.session();
                 const userData = res.data.data;
-                userData.role = userData.account?.role || "Employee";
-                
+
                 setAuthenticatedUser(userData);
                 setUser(userData);
             } catch {
@@ -30,7 +29,8 @@ function ProtectedRoute({ children, setUser, adminOnly = false }) {
         return <Navigate to="/login" />;
     }
 
-    if (adminOnly && authenticatedUser.role !== 'Admin') {
+    if (adminOnly && authenticatedUser.role !== 'admin') {
+        console.log(authenticatedUser.role);
         return <Navigate to="/dashboard" />;
     }
 
