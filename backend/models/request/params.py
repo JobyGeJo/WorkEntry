@@ -143,7 +143,7 @@ class TimeSheetParams(QueryParams):
         query = base_query
         if self.from_date and self.to_date:
             query = base_query.filter(
-                TimesheetTable.start_time >= self.from_date,
-                TimesheetTable.start_time <= datetime.combine(self.to_date, datetime.max.time())
+                TimesheetTable.date >= self.from_date,
+                TimesheetTable.date <= self.to_date
             )
         return super().build(query)
